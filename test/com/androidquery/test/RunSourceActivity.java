@@ -223,4 +223,12 @@ public class RunSourceActivity extends Activity {
 	   super.onStop();
 	   TestUtility.flurryStop(this);
 	}
+	
+	@Override
+	public void onDestroy(){
+		
+		aq.dismiss();
+		
+		super.onDestroy();
+	}
 }

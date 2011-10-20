@@ -7,9 +7,12 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 
 import com.androidquery.AQuery;
 import com.androidquery.R;
+import com.androidquery.auth.FacebookHandle;
+import com.androidquery.auth.GoogleHandle;
 import com.androidquery.callback.AjaxCallback;
 import com.androidquery.callback.AjaxStatus;
 import com.androidquery.test.RunSourceActivity;
@@ -35,6 +38,40 @@ public class AjaxAuthActivity extends RunSourceActivity {
 		AQUtility.debug("run", type);
 		
 		AQUtility.invokeHandler(this, type, false, null);
+	}
+	
+	private static final String FB_TOKEN = "aq.fb.token";
+	
+	private String getToken(String key){
+		return PreferenceManager.getDefaultSharedPreferences(this).getString(key, null);	
+	}
+	
+	private void storeToken(String key, String token){
+		PreferenceManager.getDefaultSharedPreferences(this).edit().putString(key, token).commit();	
+	}
+	
+	public void auth_facebook(){
+		
+		storeToken(FB_TOKEN, null);
+		
+		String appId = "251003261612555";
+		FacebookHandle fbh = new FacebookHandle(appId, this);
+		
+		AjaxCallback<JSONObject> cb = new AjaxCallback<JSONObject>();
+		cb.url("https://graph.facebook.com/me/feed").type(JSONObject.class).weakHandler(this, "fbcb");
+		
+		//fbh.async(cb);
+		
+		cb.auth(fbh);
+		
+		aq.ajax(cb);
+		
+	}
+	
+	public void fbcb(String url, JSONObject jo, AjaxStatus status){
+		
+		showResult(jo, status);
+		
 	}
 	
 	public void auth_pick_account(){
@@ -230,6 +267,49 @@ public class AjaxAuthActivity extends RunSourceActivity {
 	        
 	}
 	
+	public void auth_parallel(){
+		
+		String url1 = "https://picasaweb.google.com/data/feed/api/user/default";
+		String url2 = "https://picasaweb.google.com/data/feed/api/user/default?alt=json";
+		
+		GoogleHandle gh = new GoogleHandle(this, AQuery.AUTH_PICASA, null);
+		
+		AjaxCallback<XmlDom> cb = new AjaxCallback<XmlDom>();
+  
+		cb.url(url1).type(XmlDom.class).weakHandler(this, "pcb1");  
+		cb.auth(gh);
+		
+		AjaxCallback<JSONObject> cb2 = new AjaxCallback<JSONObject>();
+		  
+		cb2.url(url2).type(JSONObject.class).weakHandler(this, "pcb2");  
+		cb2.auth(gh);
+		
+		cb.async(this);
+		cb2.async(this);
+		
+		//aq.progress(R.id.progress).ajax(cb);
+	        
+	}
+	
+	public void pcb1(String url, XmlDom xml, AjaxStatus status){
+		
+		String result = "Result 1:\n";
+		
+		if(xml != null){			
+			result += xml.toString();
+			result = result.substring(0, Math.min(100, result.length())) + " ... ";
+		}
+		
+		this.showTextResult(result);
+		
+	}
+	
+	public void pcb2(String url, JSONObject jo, AjaxStatus status){
+		
+		this.showResult("Result 2:\n" + jo, null);
+		
+	}
+	
 	public void contactsCb(String url, XmlDom xml, AjaxStatus status) {
 		
 		if(xml != null){
@@ -264,5 +344,11 @@ public class AjaxAuthActivity extends RunSourceActivity {
 		
 	}
 
-	
+	@Override
+	public void onDestroy(){
+		
+		aq.dismiss();
+		
+		super.onDestroy();
+	}
 }

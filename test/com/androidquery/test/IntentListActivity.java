@@ -59,9 +59,9 @@ public class IntentListActivity extends ListActivity {
 		}
 
 		
-		if(isTaskRoot() && TestUtility.isTestDevice(this)){			
+		if(isTaskRoot()){			
 			MarketService ms = new MarketService(this);
-			ms.expire(1).checkVersion();
+			ms.checkVersion();
 		}
 		
 	}
@@ -137,7 +137,7 @@ public class IntentListActivity extends ListActivity {
 		if(type == null && TestUtility.isTestDevice(this)){
 			
 			list.add(makeActivity("com.androidquery.test.AdhocActivity", "Ad Hoc Debug", "", null));
-			
+			list.add(makeActivity("com.androidquery.test.AdhocActivity2", "Ad Hoc Debug2", "", null));
 		}
 		
 		
@@ -215,6 +215,14 @@ public class IntentListActivity extends ListActivity {
     		return false;
     	}
     }
+    
+	@Override
+	public void onDestroy(){
+		
+		aq.dismiss();
+		
+		super.onDestroy();
+	}
 	
 	
 	

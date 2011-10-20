@@ -58,8 +58,9 @@ import android.graphics.BitmapFactory;
 import android.view.View;
 
 import com.androidquery.AQuery;
+import com.androidquery.auth.AccountHandle;
+import com.androidquery.auth.GoogleHandle;
 import com.androidquery.util.AQUtility;
-import com.androidquery.util.AccountHandle;
 import com.androidquery.util.XmlDom;
 
 /**
@@ -296,6 +297,8 @@ public abstract class AbstractAjaxCallback<T, K> implements Runnable{
 	
 	private void callback(){
 		
+		AQUtility.debug("cb");
+		
 		showProgress(false);
 		
 		if(callback != null){
@@ -344,7 +347,9 @@ public abstract class AbstractAjaxCallback<T, K> implements Runnable{
 			
 			View pb = progress.get();
 			if(pb != null){				
+				
 				if(show){
+					AQUtility.debug("show prog", url);
 					pb.setTag(AQuery.TAG_URL, url);
 					pb.setVisibility(View.VISIBLE);
 				}else{
@@ -352,6 +357,8 @@ public abstract class AbstractAjaxCallback<T, K> implements Runnable{
 					if(tag == null || tag.equals(url)){
 						pb.setTag(AQuery.TAG_URL, null);
 						pb.setVisibility(View.GONE);						
+					}else{
+						AQUtility.debug("tag mismtach", tag + ":" + url);
 					}
 				}
 			}
@@ -436,10 +443,11 @@ public abstract class AbstractAjaxCallback<T, K> implements Runnable{
 	protected void memPut(String url, T object){
 	}
 	
+	/*
 	protected String getRefreshUrl(String url){
 		return url;
 	}
-	
+	*/
 	protected void filePut(String url, T object, File file, byte[] data){
 		
 		if(file == null || data == null) return;
@@ -470,6 +478,8 @@ public abstract class AbstractAjaxCallback<T, K> implements Runnable{
 	 */
 	public void async(Context context){
 		
+		AQUtility.debug("async", url);
+		
 		if(status == null){
 			status = new AjaxStatus();
 			status.redirect(url).refresh(refresh);
@@ -479,19 +489,19 @@ public abstract class AbstractAjaxCallback<T, K> implements Runnable{
 		
 		if(ah != null){
 			
-			if(ah.needToken()){
-				ah.async(this);
+			if(ah.failed()){
+				status.code(401).message("Authentication failed.");
+				callback();
+				return;
+			}else if(!ah.authenticated()){
+				AQUtility.debug("not authed", ah.failed());
+				ah.auth(this);
 				return;
 			}
 			
-			if(ah.getToken() == null){
-				status.code(401).message("Auth failed.");
-				callback();
-				return;
-			}
 		}
 		
-		work(context, true);
+		work(context);
 	
 	}
 	
@@ -503,7 +513,7 @@ public abstract class AbstractAjaxCallback<T, K> implements Runnable{
 		
 	}
 	
-	private void work(Context context, boolean async){
+	private void work(Context context){
 		
 		T object = memGet(url);
 			
@@ -611,13 +621,21 @@ public abstract class AbstractAjaxCallback<T, K> implements Runnable{
 		
 		try{
 			
+			if(ah != null){
+				ah.applyToken(this);
+			}
+			
 			network();
 			
-			if(ah != null && (status.getCode() == 401 || status.getCode() == 403)){
-				AQUtility.debug("reauth needed!");				
-				authToken(ah.getType(), ah.reauth());
-				network();
+			if(ah != null && ah.expired(status.getCode())){
+				AQUtility.debug("reauth needed!");	
+				if(ah.reauth(this)){
+					ah.applyToken(this);
+					network();
+				}
 			}
+			
+			
 								
 			data = status.getData();
 		}catch(Exception e){
@@ -665,8 +683,11 @@ public abstract class AbstractAjaxCallback<T, K> implements Runnable{
 	
 	private void network() throws IOException{
 		
+		
 		String networkUrl = url;
-		if(refresh) networkUrl = getRefreshUrl(url);
+		if(ah != null){
+			networkUrl = ah.applyToken(url);
+		}
 		
 		if(params == null){
 			httpGet(networkUrl, headers, status);	
@@ -751,8 +772,7 @@ public abstract class AbstractAjaxCallback<T, K> implements Runnable{
 		for(Map.Entry<String, Object> e: params.entrySet()){
 			Object value = e.getValue();
 			if(value != null){
-				pairs.add(new BasicNameValuePair(e.getKey(), value.toString()));
-				
+				pairs.add(new BasicNameValuePair(e.getKey(), value.toString()));				
 			}
 		}
 		
@@ -828,28 +848,17 @@ public abstract class AbstractAjaxCallback<T, K> implements Runnable{
 	 */
 	public K auth(Activity act, String type, String account){
 		
-		if(android.os.Build.VERSION.SDK_INT >= 5){		
-			ah = new AccountHandle(act, type, account);
+		if(android.os.Build.VERSION.SDK_INT >= 5 && type.startsWith("g.")){		
+			ah = new GoogleHandle(act, type, account);
 		}
 		return self();
 		
 	}
 	
-
-	/**
-	 * Set the auth token directly. Note: Currently only support GoogleLogin auth.
-	 *
-	 * @param type the type
-	 * @param token the token
-	 * @return the k
-	 */
-	public K authToken(String type, String token){
-		if(token != null){
-			header("Authorization", "GoogleLogin auth=" + token);
-		}
+	public K auth(AccountHandle handle){		
+		ah = handle;
 		return self();
 	}
-	
 	
 	/**
 	 * Gets the url.

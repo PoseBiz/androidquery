@@ -14,7 +14,7 @@
  * the License.
  */
 
-package com.androidquery.util;
+package com.androidquery;
 
 import java.io.IOException;
 
@@ -34,6 +34,7 @@ import android.preference.PreferenceManager;
 
 import com.androidquery.AQuery;
 import com.androidquery.callback.AbstractAjaxCallback;
+import com.androidquery.util.AQUtility;
 
 /**
  * AQuery internal use only. Handle account, account manager related tasks.
@@ -133,7 +134,9 @@ public class AccountHandle extends AsyncTask<String, String, Bundle> implements 
 	        }
 	        builder.setItems(names, this);
 	        builder.setOnCancelListener(this);
-	        builder.create().show();
+	        
+	        AlertDialog dialog = builder.create();//.show();
+	        new AQuery(act).show(dialog);
         }
 	}
 	
@@ -184,7 +187,9 @@ public class AccountHandle extends AsyncTask<String, String, Bundle> implements 
 	
 	private void startCb(){
 		
-		cb.authToken(type, token);
+		//cb.authToken(type, token);
+		cb.header("Authorization", "GoogleLogin auth=" + token);
+		
 		cb.async(act);
 		
 		act = null;
