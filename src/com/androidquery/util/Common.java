@@ -17,8 +17,10 @@
 package com.androidquery.util;
 
 import java.io.File;
+import java.lang.ref.WeakReference;
 import java.util.Comparator;
 
+import android.app.Dialog;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
@@ -29,7 +31,6 @@ import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
-import android.widget.BaseAdapter;
 import android.widget.ListAdapter;
 
 import com.androidquery.AQuery;
@@ -84,7 +85,7 @@ public class Common implements Comparator<File>, Runnable, OnClickListener, OnIt
 				cbo = this;
 			}
 			
-			AQUtility.invokeHandler(cbo, method, fallback, sig, input);
+			AQUtility.invokeHandler(cbo, method, fallback, true, sig, input);
 			
 		}else if(methodId != 0){
 			
@@ -196,13 +197,20 @@ public class Common implements Comparator<File>, Runnable, OnClickListener, OnIt
 		this.osl = listener;
 	}
 	
+	private int lastBottom;
 	private void checkScrolledBottom(AbsListView view, int scrollState){
 		
 		int cc = view.getCount();
 		int last = view.getLastVisiblePosition();
 		
-		if(scrollState == OnScrollListener.SCROLL_STATE_IDLE && cc == last + 1){
-			invoke(view, scrollState);
+		if(scrollState == OnScrollListener.SCROLL_STATE_IDLE && cc == last + 1){			
+			if(last != lastBottom){
+				lastBottom = last;
+				invoke(view, scrollState);
+			}
+			
+		}else{
+			lastBottom = -1;
 		}
 	}
 	
@@ -226,7 +234,7 @@ public class Common implements Comparator<File>, Runnable, OnClickListener, OnIt
 	            for(int i = 0; i < count; i++) {
 	                View convertView = (View) view.getChildAt(i);
 	                if(convertView.getTag(AQuery.TAG_SCROLL_LISTENER) != null){
-	                	la.getView(first + i, convertView, view);
+	                	la.getView(first + i, convertView, view);	                	
 	                	convertView.setTag(AQuery.TAG_SCROLL_LISTENER, null);
 	                }
 	            }
@@ -240,56 +248,47 @@ public class Common implements Comparator<File>, Runnable, OnClickListener, OnIt
 	}
 
 
-
-	
-	public static boolean shouldDelay(View convertView, ViewGroup parent, String url, float velocity){
+	public static boolean shouldDelay(View convertView, ViewGroup parent, String url, float velocity, boolean fileCheck){
 		
 		if(url == null) return false;
 		
 		int state = OnScrollListener.SCROLL_STATE_IDLE;
 		float vel = 0;
-		Common sl = null;
+		Common sl = (Common) parent.getTag(AQuery.TAG_SCROLL_LISTENER);
+		if(sl != null){
+			state = sl.getScrollState();
+			vel = sl.getVelocity();
+		}else if(parent instanceof AbsListView){
+			AbsListView lv = (AbsListView) parent;
+			sl = new Common();
+			lv.setOnScrollListener(sl);
+			lv.setTag(AQuery.TAG_SCROLL_LISTENER, sl);	
+		}
 		
+		boolean moving = state == OnScrollListener.SCROLL_STATE_FLING && vel >= velocity;
 		
-		if(BitmapAjaxCallback.getMemoryCached(url, 0) == null && AQUtility.getExistedCacheByUrl(parent.getContext(), url) == null){
-			
-			if(parent instanceof AbsListView){
-				
-				sl = (Common) parent.getTag(AQuery.TAG_SCROLL_LISTENER);
-				
-				if(sl == null){
-				
-					AbsListView lv = (AbsListView) parent;
-
-					sl = new Common();
-					lv.setOnScrollListener(sl);
-					lv.setTag(AQuery.TAG_SCROLL_LISTENER, sl);				
-					
-				}else{
-					state = sl.getScrollState();
-					vel = sl.getVelocity();
-				}
-			}
-			
-		}else{
+		if(!moving){
 			convertView.setTag(AQuery.TAG_SCROLL_LISTENER, null);
 			return false;
 		}
 		
+		boolean hit = BitmapAjaxCallback.getMemoryCached(url, 0) != null || (fileCheck && AQUtility.getExistedCacheByUrl(parent.getContext(), url) != null);
 		
-		if(state == OnScrollListener.SCROLL_STATE_FLING && vel >= velocity){			
-			if(convertView.getTag(AQuery.TAG_SCROLL_LISTENER) == null && sl != null){
-				sl.addSkip();
-			}
+		if(hit){
+			return false;
+		}
+		
+		if(sl != null){
+			sl.addSkip();
 			convertView.setTag(AQuery.TAG_SCROLL_LISTENER, url);
 			return true;
-		}else{
-			convertView.setTag(AQuery.TAG_SCROLL_LISTENER, null);
-			return false;
 		}
+		
+		return false;
 		
 		
 	}
+	
 	
 	@Override
 	public void afterTextChanged(Editable s) {
@@ -318,6 +317,41 @@ public class Common implements Comparator<File>, Runnable, OnClickListener, OnIt
 
 	@Override
 	public void onNothingSelected(AdapterView<?> arg0) {
+		
+	}
+	
+	public static void showProgress(Object p, String url, boolean show){
+		
+		if(p != null){
+			
+			if(p instanceof View){				
+
+				View pv = (View) p;
+				
+				if(show){
+					pv.setTag(AQuery.TAG_URL, url);
+					pv.setVisibility(View.VISIBLE);
+				}else{
+					Object tag = pv.getTag(AQuery.TAG_URL);
+					if(tag == null || tag.equals(url)){
+						pv.setTag(AQuery.TAG_URL, null);
+						pv.setVisibility(View.GONE);						
+					}
+				}
+			}else if(p instanceof Dialog){
+				
+				Dialog pd = (Dialog) p;
+				
+				AQuery aq = new AQuery(pd.getContext());
+				
+				if(show){
+					aq.show(pd);
+				}else{
+					aq.dismiss(pd);
+				}
+				
+			}
+		}
 		
 	}
 }

@@ -16,9 +16,17 @@
 
 package com.androidquery.callback;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
+import org.apache.http.Header;
+import org.apache.http.client.CookieStore;
+import org.apache.http.client.protocol.ClientContext;
+import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.protocol.HttpContext;
 
 /**
  * AjaxStatus contains meta information of an AjaxCallback callback.
@@ -37,6 +45,9 @@ public class AjaxStatus {
 	/** Source MEMORY. */
 	public static final int MEMORY = 4;
 	
+	/** Source DEVICE. */
+	public static final int DEVICE = 5;
+	
 	public static final int NETWORK_ERROR = -101;
 	public static final int AUTH_ERROR = -102;
 	public static final int TRANSFORM_ERROR = -103;
@@ -54,6 +65,10 @@ public class AjaxStatus {
 	private long start = System.currentTimeMillis();
 	private boolean done;
 	private boolean invalid;
+	private boolean reauth;
+	private String error;
+	private HttpContext context;
+	private Header[] headers;
 	
 	public AjaxStatus(){		
 	}
@@ -73,6 +88,11 @@ public class AjaxStatus {
 		return this;
 	}
 	
+	protected AjaxStatus error(String error){
+		this.error = error;
+		return this;
+	}
+	
 	protected AjaxStatus message(String message){
 		this.message = message;
 		return this;
@@ -80,6 +100,11 @@ public class AjaxStatus {
 	
 	protected AjaxStatus redirect(String redirect){
 		this.redirect = redirect;
+		return this;
+	}
+	
+	protected AjaxStatus context(HttpContext context){
+		this.context = context;
 		return this;
 	}
 	
@@ -93,16 +118,28 @@ public class AjaxStatus {
 		return this;
 	}
 	
+	protected AjaxStatus reauth(boolean reauth){
+		this.reauth = reauth;
+		return this;
+	}
+	
 	protected AjaxStatus client(DefaultHttpClient client){
 		this.client = client;
+		return this;
+	}
+	
+	protected AjaxStatus headers(Header[] headers){
+		this.headers = headers;
 		return this;
 	}
 	
 	protected AjaxStatus done(){
 		this.duration = System.currentTimeMillis() - start;
 		this.done = true;
+		this.reauth = false;
 		return this;
 	}
+	
 	
 	protected AjaxStatus data(byte[] data){
 		this.data = data;
@@ -116,6 +153,10 @@ public class AjaxStatus {
 	
 	protected boolean getDone() {
 		return done;
+	}
+	
+	protected boolean getReauth() {
+		return reauth;
 	}
 	
 	protected boolean getInvalid() {
@@ -200,6 +241,15 @@ public class AjaxStatus {
 	}
 	
 	/**
+	 * Gets the error response as a string. For http response code that's not 200-299.
+	 *
+	 * @return source
+	 */
+	public String getError() {
+		return error;
+	}
+	
+	/**
 	 * Test if the response is expired against current time, given the expire duration in milliseconds.
 	 * If the ajax source is NETWORK, it's never considered expired.
 	 *
@@ -208,9 +258,9 @@ public class AjaxStatus {
 	
 	public boolean expired(long expire){
 		
-		long durr = time.getTime();
+		long mod = time.getTime();
 		long now = System.currentTimeMillis();		
-		long diff = now - durr;
+		long diff = now - mod;
 		
 		if(diff > expire && getSource() != NETWORK){
 			return true;
@@ -218,5 +268,41 @@ public class AjaxStatus {
 		
 		return false;
 	}
+	
+	
+	/**
+	 * Return the cookies set by the server.
+	 * 
+	 * Return values only when source is not from cache (source == NETWORK), returns empty list otherwise.
+	 *
+	 * @return cookies
+	 */
+	
+	public List<Cookie> getCookies(){
+		
+		if(context == null) return Collections.emptyList();		
+		CookieStore store = (CookieStore) context.getAttribute(ClientContext.COOKIE_STORE);
+		if(store == null) return Collections.emptyList();
+		
+		return store.getCookies();
+	}
+	
+	
+	/**
+	 * Return the http response headers.
+	 * 
+	 * Return values only when source is not from cache (source == NETWORK), returns empty list otherwise.
+	 *
+	 * @return cookies
+	 */
+	
+	public List<Header> getHeaders(){
+		
+		if(headers == null) return Collections.emptyList();		
+		return Arrays.asList(headers);
+		
+	}
+	
+	
 	
 }

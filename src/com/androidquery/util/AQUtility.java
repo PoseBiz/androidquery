@@ -22,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -33,6 +34,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import android.app.Application;
 import android.content.Context;
 import android.os.Environment;
 import android.os.Handler;
@@ -74,22 +76,6 @@ public class AQUtility {
 	}
 	
 	
-	public static void debugWait(){
-		
-		if(!debug) return;
-		
-		if(wait == null) wait = new Object();
-		
-		synchronized(wait) {
-			
-			try {
-				wait.wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		
-	}
 	
 	public static void debugNotify(){
 		
@@ -114,11 +100,34 @@ public class AQUtility {
 		}
 	}
 	
-	public static void report(Throwable e){
-		if(debug && e != null){
+	public static void debug(Throwable e){
+		if(debug){
 			String trace = Log.getStackTraceString(e);
 			Log.w("AQuery", trace);
 		}
+	}
+	
+	public static void report(Throwable e){
+		
+		if(e == null) return;
+
+		try{
+
+			debug(e);
+			
+			if(eh != null){
+				eh.uncaughtException(Thread.currentThread(), e);
+			}
+			
+		}catch(Exception ex){
+			ex.printStackTrace();
+		}
+		
+	}
+	
+	private static UncaughtExceptionHandler eh;
+	public static void setExceptionHandler(UncaughtExceptionHandler handler){
+		eh = handler;
 	}
 	
 	private static Map<String, Long> times = new HashMap<String, Long>();
@@ -147,17 +156,21 @@ public class AQUtility {
 		
 	}
 	
-	public static Object invokeHandler(Object handler, String callback, boolean fallback, Class<?>[] cls, Object... params){
+	public static Object invokeHandler(Object handler, String callback, boolean fallback, boolean report, Class<?>[] cls, Object... params){
     	
-		return invokeHandler(handler, callback, fallback, cls, null, params);
+		return invokeHandler(handler, callback, fallback, report, cls, null, params);
 		
     }
 
-	public static Object invokeHandler(Object handler, String callback, boolean fallback, Class<?>[] cls, Class<?>[] cls2, Object... params){
+	public static Object invokeHandler(Object handler, String callback, boolean fallback, boolean report, Class<?>[] cls, Class<?>[] cls2, Object... params){
 		try {
 			return invokeMethod(handler, callback, fallback, cls, cls2, params);
 		} catch (Exception e) {
-			e.printStackTrace();
+			if(report){
+				AQUtility.report(e);
+			}else{
+				AQUtility.debug(e);
+			}
 			return null;
 		}
 	}
@@ -319,7 +332,6 @@ public class AQUtility {
 	    		try{
 	    			file.createNewFile();
 	    		}catch(Exception e){
-	    			AQUtility.debug("can't make:" + file.getAbsolutePath());
 	    			AQUtility.report(e);
 	    		}
 	    	}
@@ -328,7 +340,6 @@ public class AQUtility {
 	    	fos.write(data);
 	    	fos.close();
     	}catch(Exception e){
-    		AQUtility.debug(file.getAbsolutePath());
     		AQUtility.report(e);
     	}
     	
@@ -400,6 +411,7 @@ public class AQUtility {
 	}
 	
 	public static File getCacheFile(File dir, String url){
+		if(url == null) return null;
 		String name = getCacheFileName(url);
 		File file = makeCacheFile(dir, name);
 		return file;
@@ -442,6 +454,7 @@ public class AQUtility {
 	}
 	
 	public static void cleanCacheAsync(Context context){
+		
 		long triggerSize = 3000000;
 		long targetSize = 2000000;	
 		cleanCacheAsync(context, triggerSize, targetSize);
@@ -539,4 +552,12 @@ public class AQUtility {
 		return value;
 	}
 	
+	private static Context context;
+	public static void setContext(Application app){
+		context = app.getApplicationContext();
+	}
+	
+	public static Context getContext(){
+		return context;
+	}
 }
