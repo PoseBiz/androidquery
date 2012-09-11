@@ -30,6 +30,10 @@
         <item>HTML/XML String</item>   
         <item>byte[]</item>  
         <item>XML Dom</item>  
+        <item>File</item>  
+        <item>File (Download)</item> 
+        <item>Web View (URL Cached)</item>
+        <item>InputStream</item> 
         <item>XML Pull Parser</item>  
         <item>JSON (Array)</item>
         <item>Custom Type (ex. Gson)</item>
@@ -40,6 +44,7 @@
         <item>Caching</item> 
         <item>Progress</item>
         <item>Progress Dialog</item> 
+        <item>Progress Activity</item> 
         <item>AjaxCallback</item>   
         <item>Request Headers</item>  
         <item>Cookies</item>  
@@ -57,7 +62,11 @@
         <item>com.androidquery.test.async.AjaxLoadingActivity:async_html</item>   
         <item>com.androidquery.test.async.AjaxLoadingActivity:async_bytes</item>
         <item>com.androidquery.test.async.AjaxLoadingActivity:async_xml</item>
-        <item>com.androidquery.test.async.AjaxLoadingActivity:async_xpp:new</item>
+        <item>com.androidquery.test.async.AjaxLoadingActivity:async_file:beta</item>
+        <item>com.androidquery.test.async.AjaxLoadingActivity:async_file_custom:beta</item>
+        <item>com.androidquery.test.async.AjaxLoadingActivity:async_web:beta</item>
+        <item>com.androidquery.test.async.AjaxLoadingActivity:async_inputstream:beta</item>
+        <item>com.androidquery.test.async.AjaxLoadingActivity:async_xpp</item>
         <item>com.androidquery.test.async.AjaxLoadingActivity:async_json_array</item>
         <item>com.androidquery.test.async.AjaxLoadingActivity:async_transformer:beta</item>
         <item>com.androidquery.test.async.AjaxLoadingActivity:async_post</item> 
@@ -66,14 +75,15 @@
         <item>com.androidquery.test.async.AjaxLoadingActivity:async_method_cb</item>
         <item>com.androidquery.test.async.AjaxLoadingActivity:async_cached</item> 
         <item>com.androidquery.test.async.AjaxLoadingActivity:async_progress</item> 
-        <item>com.androidquery.test.async.AjaxLoadingActivity:async_progress_dialog:new</item> 
+        <item>com.androidquery.test.async.AjaxLoadingActivity:async_progress_dialog</item> 
+        <item>com.androidquery.test.async.AjaxLoadingActivity:async_progress_activity:new</item> 
         <item>com.androidquery.test.async.AjaxLoadingActivity:async_advance</item>  
         <item>com.androidquery.test.async.AjaxLoadingActivity:async_header</item>  
-        <item>com.androidquery.test.async.AjaxLoadingActivity:async_cookie:new</item>
+        <item>com.androidquery.test.async.AjaxLoadingActivity:async_cookie</item>
         <item>com.androidquery.test.async.AjaxLoadingActivity:async_encoding</item>  
         <item>com.androidquery.test.async.AjaxLoadingActivity:async_status</item>  
-        <item>com.androidquery.test.async.AjaxLoadingActivity:async_rcookies:new</item>
-        <item>com.androidquery.test.async.AjaxLoadingActivity:async_rheaders:new</item>
+        <item>com.androidquery.test.async.AjaxLoadingActivity:async_rcookies</item>
+        <item>com.androidquery.test.async.AjaxLoadingActivity:async_rheaders</item>
         <item>com.androidquery.test.async.AjaxLoadingActivity:async_error</item>  
         <item>com.androidquery.test.async.AjaxLoadingActivity:async_invalidate</item>  
         <item>http://code.google.com/p/android-query/wiki/AsyncAPI</item>    
@@ -93,6 +103,8 @@
         <item>Aspect Ratio (Dynamic)</item>          
         <item>Aspect Ratio (Fixed)</item>  
         
+        <item>Round Corner</item>  
+        
         <item>Image Zoom (WebView)</item>    
             
         <item>List Items</item>  
@@ -101,13 +113,18 @@
         <item>List Items (Delay Load During Fling)</item>  
         <item>List Items (Options)</item>  
         
-        <item>Grid Items</item>  
+        <item>Grid Items (Delay Load)</item>  
+        
+        <item>Gallery Items (Delay Load)</item>  
+        
+        <item>Expandable List Items (Delay Load)</item>  
         
         <item>Google Chart</item> 
         
         <item>Custom Callback</item>        
         <item>File (Async)</item>
         <item>File Custom Callback</item>
+        
         <item>Duplicated URL</item>    
         
         <item>BitmapAjaxCallback (Advance)</item> 
@@ -142,9 +159,8 @@
         
         <item>com.androidquery.test.image.ImageLoadingActivity:image_ratio</item>
         <item>com.androidquery.test.image.ImageLoadingAspectRatioActivity:image_ratio_fixed</item>
-        
+        <item>com.androidquery.test.image.ImageLoadingActivity:image_round</item>
         <item>com.androidquery.test.image.ImageZoomActivity:image_zoom</item>
-        
         
         <item>com.androidquery.test.image.ImageLoadingListActivity:image_list</item>
         <item>com.androidquery.test.image.ImageLoadingList2Activity:image_list2</item>
@@ -153,8 +169,11 @@
         <item>com.androidquery.test.image.ImageLoadingListOptionsActivity:image_options</item>
         
         <item>com.androidquery.test.image.ImageLoadingGridActivity:image_grid</item>
+        <item>com.androidquery.test.image.ImageLoadingGalleryActivity:image_gallery:new</item>
+        <item>com.androidquery.test.image.ImageLoadingExpandableListActivity:image_elist:new</item>
         
-        <item>com.androidquery.test.image.ImageLoadingActivity:image_chart:new</item>
+        
+        <item>com.androidquery.test.image.ImageLoadingActivity:image_chart</item>
         
         <item>com.androidquery.test.image.ImageLoadingActivity:image_custom</item>
         <item>com.androidquery.test.image.ImageLoadingActivity:image_file</item>
@@ -185,6 +204,8 @@
   		<item>Facebook (Single Sign On)</item>
   		      
   		<item>Twitter</item>
+  		<item>Twitter (Token Only)</item>
+  		
   		<item>Basic</item>
   		
         <item>Google Reader (Pick Account)</item>  
@@ -201,7 +222,8 @@
   		<item>com.androidquery.test.async.AjaxAuthActivity:auth_facebook:beta</item>
   		<item>com.androidquery.test.async.AjaxAuthActivity:auth_facebook_sso:beta</item> 
   		 
-  		<item>com.androidquery.test.async.AjaxAuthActivity:auth_twitter:beta</item> 
+  		<item>com.androidquery.test.async.AjaxAuthActivity:auth_twitter:beta</item>
+  		<item>com.androidquery.test.async.AjaxAuthActivity:auth_twitter_token:beta</item> 
   		<item>com.androidquery.test.async.AjaxAuthActivity:auth_basic:beta</item>
   		
         <item>com.androidquery.test.async.AjaxAuthActivity:auth_pick_account</item>  
@@ -220,6 +242,10 @@
         <item>async_html</item>   
         <item>async_bytes</item>  
         <item>async_xml</item>
+        <item>async_file</item>
+        <item>async_file_custom</item>
+        <item>async_web</item>
+        <item>async_inputstream</item>
         <item>async_xpp</item>
         <item>async_json_array</item>
         <item>async_transformer</item>
@@ -231,6 +257,7 @@
         <item>async_cached</item>
         <item>async_progress</item>
         <item>async_progress_dialog</item>
+        <item>async_progress_activity</item>
         <item>async_advance</item>
         <item>async_header</item>
         <item>async_cookie</item>
@@ -253,6 +280,7 @@
         
         <item>image_ratio</item>
         <item>image_ratio_fixed</item>
+        <item>image_round</item>
         <item>image_zoom</item>
             
         <item>image_list</item>
@@ -262,6 +290,8 @@
         <item>image_options</item>
         
         <item>image_grid</item>
+        <item>image_gallery</item>
+        <item>image_elist</item>
         
         <item>image_chart</item>
         
@@ -288,7 +318,8 @@
         <item>auth_facebook</item> 
         <item>auth_facebook_sso</item>
          
-        <item>auth_twitter</item>   
+        <item>auth_twitter</item> 
+        <item>auth_twitter_token</item>  
         <item>auth_basic</item>   
           
         <item>auth_pick_account</item>  
@@ -317,6 +348,10 @@
         <item>Asynchronous HTTP Get HTML/XML</item>   
         <item>Asynchronous HTTP Get as Bytes Array</item>
         <item>Asynchronous HTTP Get XML Dom</item>   
+        <item>Asynchronous HTTP Get File Download</item>   
+        <item>Asynchronous HTTP Get File Path Download</item>  
+        <item>Asynchronous Load Html with WebView Caching</item>   
+        <item>Asynchronous HTTP Get Input Stream</item>   
         <item>Asynchronous HTTP Get XML Pull Parser</item>   
         <item>Asynchronous HTTP Get JSON Array</item>
         <item>Asynchronous HTTP Get Custom Type (GSON example)</item>
@@ -327,6 +362,7 @@
         <item>Asynchronous HTTP Get with Cache Control</item>
         <item>Show Requests Progress</item>
         <item>Show Progress Dialog</item>
+        <item>Show Activity Progress</item>
         <item>Using AjaxCallback Directly</item>
         <item>Setting HTTP Headers for Ajax Requests</item>
         <item>Setting HTTP Cookies for Ajax Requests</item>
@@ -352,6 +388,8 @@
         <item>Preserve Image Aspect Ratio Dynamically</item>
         <item>Predefined Image Aspect Ratio</item>
         
+        <item>Round Corner Image</item>
+        
         <item>Zoom enables image with WebView</item>
         
         <item>Loading Image in List View Items</item>   
@@ -361,6 +399,8 @@
         <item>List Item Image Options Demo</item>    
         
         <item>Loading Image in Grid View with Aspect Ratio</item>   
+        <item>Loading Image in Gallery View with Delay Load</item>  
+        <item>Loading Image in Expanable List with Delay Load</item>  
         
         <item>Loading Google Chart Images with 2000+ length url</item>   
         
@@ -389,6 +429,7 @@
         
           
         <item>Twitter Auth - Get User Feed</item>   
+        <item>Twitter Auth - Token/Secret Only</item>   
         <item>Basic Auth with username and password</item>    
        
            

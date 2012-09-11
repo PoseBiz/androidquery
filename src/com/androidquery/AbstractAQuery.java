@@ -30,12 +30,14 @@ import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Paint;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.Spanned;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.view.ViewGroup.MarginLayoutParams;
@@ -55,6 +57,8 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ExpandableListAdapter;
+import android.widget.ExpandableListView;
 import android.widget.Gallery;
 import android.widget.GridView;
 import android.widget.ImageView;
@@ -90,6 +94,7 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 	protected Object progress;
 	protected AccountHandle ah;
 	private Transformer trans;
+	private int policy = CACHE_DEFAULT;
 
 	protected T create(View view){
 		
@@ -107,6 +112,7 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 		
 	}
 	
+	
 	private Constructor<T> constructor;
 	@SuppressWarnings("unchecked")
 	private Constructor<T> getConstructor(){
@@ -123,6 +129,8 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 		
 		return constructor;
 	}
+	
+	
 	
 	/**
 	 * Instantiates a new AQuery object.
@@ -239,8 +247,7 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 	public T recycle(View root){
 		this.root = root;
 		this.view = root;
-		this.progress = null;
-		this.ah = null;
+		reset();
 		this.context = null;
 		return self();
 	}
@@ -267,10 +274,12 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 	 * @return self
 	 */
 	public T id(int id){
+		/*
 		view = findView(id);	
-		progress = null;
-		ah = null;
+		reset();
 		return self();
+		*/
+		return id(findView(id));
 	}
 	
 	/**
@@ -281,8 +290,7 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 	 */
 	public T id(View view){
 		this.view = view;	
-		progress = null;
-		ah = null;
+		reset();
 		return self();
 	}
 	
@@ -293,10 +301,12 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 	 * @return self
 	 */
 	public T id(int... path){
+		/*
 		view = findView(path);	
-		progress = null;
-		ah = null;		
+		reset();		
 		return self();
+		*/
+		return id(findView(path));
 	}
 	
 	/**
@@ -329,7 +339,7 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 	 * @return self
 	 */
 	
-	public T progress(View view){
+	public T progress(Object view){
 		progress = view;		
 		return self();
 	}
@@ -374,6 +384,11 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 	 */
 	public T transformer(Transformer transformer){
 		trans = transformer;
+		return self();
+	}	
+	
+	public T policy(int cachePolicy){
+		policy = cachePolicy;
 		return self();
 	}	
 	
@@ -441,6 +456,23 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 		return self();
 	}
 	
+	/**
+	 * Set the text of a TextView. Hide the view (gone) if text is empty.
+	 *
+	 * @param text the text
+	 * @param goneIfEmpty hide if text is null or length is 0
+	 * @return self
+	 */
+	
+	public T text(CharSequence text, boolean goneIfEmpty){
+			
+		if(goneIfEmpty && (text == null || text.length() == 0)){
+			return gone();
+		}else{
+			return text(text);
+		}
+	}
+	
 
 	
 	/**
@@ -474,6 +506,38 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 		return self();
 	}
 	
+	
+	/**
+	 * Set the text typeface of a TextView.
+	 *
+	 * @param typeface typeface
+	 * @return self
+	 */
+	public T typeface(Typeface tf){
+		
+		if(view instanceof TextView){			
+			TextView tv = (TextView) view;
+			tv.setTypeface(tf);
+		}
+		return self();
+	}
+	
+	/**
+	 * Set the text size (in sp) of a TextView.
+	 *
+	 * @param size size
+	 * @return self
+	 */
+	public T textSize(float size){
+		
+		if(view instanceof TextView){			
+			TextView tv = (TextView) view;
+			tv.setTextSize(size);
+		}
+		return self();
+	}
+	
+	
 	/**
 	 * Set the adapter of an AdapterView.
 	 *
@@ -486,6 +550,22 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 		
 		if(view instanceof AdapterView){
 			AdapterView av = (AdapterView) view;
+			av.setAdapter(adapter);
+		}
+		
+		return self();
+	}
+	
+	/**
+	 * Set the adapter of an ExpandableListView.
+	 *
+	 * @param adapter adapter
+	 * @return self
+	 */
+	public T adapter(ExpandableListAdapter adapter){
+		
+		if(view instanceof ExpandableListView){
+			ExpandableListView av = (ExpandableListView) view;
 			av.setAdapter(adapter);
 		}
 		
@@ -638,14 +718,15 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 	 * @see testImage12
 	 * 
 	 */
-	
-	
 	public T image(String url, boolean memCache, boolean fileCache, int targetWidth, int fallbackId, Bitmap preset, int animId, float ratio){
+		return image(url, memCache, fileCache, targetWidth, fallbackId, preset, animId, ratio, 0);
+	}
+	
+	private T image(String url, boolean memCache, boolean fileCache, int targetWidth, int fallbackId, Bitmap preset, int animId, float ratio, int round){
 		
 		if(view instanceof ImageView){		
-			BitmapAjaxCallback.async(act, getContext(), (ImageView) view, url, memCache, fileCache, targetWidth, fallbackId, preset, animId, ratio, AQuery.ANCHOR_DYNAMIC, progress, ah);			
-			progress = null;
-			ah = null;
+			BitmapAjaxCallback.async(act, getContext(), (ImageView) view, url, memCache, fileCache, targetWidth, fallbackId, preset, animId, ratio, AQuery.ANCHOR_DYNAMIC, progress, ah, policy, round);			
+			reset();
 		}
 		
 		return self();
@@ -1074,6 +1155,15 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 	}
 	
 	/**
+	 * Gets the current view as a ExpandableListView.
+	 *
+	 * @return ExpandableListView
+	 */
+	public ExpandableListView getExpandableListView(){
+		return (ExpandableListView) view;
+	}
+	
+	/**
 	 * Gets the current view as a gridview.
 	 *
 	 * @return GridView
@@ -1192,6 +1282,37 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 		return self();
 	}
 	
+	/**
+	 * Register a callback method for when the view is long clicked. Method must have signature of method(View view).
+	 *
+	 * @param handler The handler that has the public callback method.
+	 * @param method The method name of the callback.
+	 * @return self
+	 */
+	public T longClicked(Object handler, String method){
+	
+		Common common = new Common().forward(handler, method, true, ON_CLICK_SIG);
+		return longClicked(common);
+		
+	}	
+	
+	
+	/**
+	 * Register a callback method for when the view is long clicked. 
+	 *
+	 * @param listener The callback method.
+	 * @return self
+	 */
+	public T longClicked(OnLongClickListener listener){
+		
+		if(view != null){						
+			view.setOnLongClickListener(listener);
+		}
+		
+		return self();
+	}
+	
+	
 	private static Class<?>[] ON_ITEM_SIG = {AdapterView.class, View.class, int.class, long.class};
 	
 	/**
@@ -1305,6 +1426,7 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 			common = new Common();
 			lv.setOnScrollListener(common);
 			lv.setTag(AQuery.TAG_SCROLL_LISTENER, common);
+			AQUtility.debug("set scroll listenr");
 		}
 		
 		return common;
@@ -1613,35 +1735,47 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 	
 	
 	
-	protected <K> T invoke(AbstractAjaxCallback<?, K> callback){
+	protected <K> T invoke(AbstractAjaxCallback<?, K> cb){
 				
-		
+		/*
 		if(ah != null){
 			callback.auth(ah);
-			ah = null;
 		}
 		
 		if(progress != null){
 			callback.progress(progress);
-			progress = null;
 		}
 		
 		if(trans != null){
 			callback.transformer(trans);
-			trans = null;
 		}
+		
+		 */
+		
+		cb.auth(ah);
+		cb.progress(progress);
+		cb.transformer(trans);
+		cb.policy(policy);
 		
 		if(act != null){
-			callback.async(act);
+			cb.async(act);
 		}else{
-			callback.async(getContext());
+			cb.async(getContext());
 		}
 		
+		reset();
 		
 		return self();
 	}	
 	
-	
+	private void reset(){
+		
+		ah = null;
+		progress = null;
+		trans = null;
+		policy = CACHE_DEFAULT;
+		
+	}
 	
 	
 	/**
@@ -1828,9 +1962,11 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 	 * @return File
 	 */
 	public File getCachedFile(String url){
-		
-		return AQUtility.getExistedCacheByUrl(AQUtility.getCacheDir(getContext()), url);
-		
+	
+		//return AQUtility.getExistedCacheByUrl(AQUtility.getCacheDir(getContext()), url);
+		File result = AQUtility.getExistedCacheByUrl(AQUtility.getCacheDir(getContext(), AQuery.CACHE_PERSISTENT), url);
+		if(result == null) result = AQUtility.getExistedCacheByUrl(AQUtility.getCacheDir(getContext(), AQuery.CACHE_DEFAULT), url);
+		return result;
 	}
 	
 	/**
@@ -1874,7 +2010,7 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 		if(result == null){
 			File file = getCachedFile(url);
 			if(file != null){
-				result = BitmapAjaxCallback.getResizedImage(file.getAbsolutePath(), null, targetWidth, true, null);
+				result = BitmapAjaxCallback.getResizedImage(file.getAbsolutePath(), null, targetWidth, true, 0);
 			}
 		}
 		
@@ -1895,26 +2031,76 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 	}
 	
 	/**
+	 * @deprecated  As of release 0.21.3, replaced by shouldDelay(int position, View convertView, ViewGroup parent, String url)
 	 * 
-	 * See shouldDelay(View convertView, ViewGroup parent, String url, float velocity, boolean fileCheck).
-	 * File check is true by default.
+	 * This method is less efficicent and promote file check which could hold up the UI thread.
 	 * 
-	 * @param convertView the list item view
-	 * @param parent the parent input of getView
-	 * @param url the content url to be checked if cached and is available immediately
-	 * @param velocity the trigger velocity
-	 * 
-	 * @return Bitmap
+	 * {@link #shouldDelay(int position, View convertView, ViewGroup parent, String url)}
 	 */
-	
-	public boolean shouldDelay(View convertView, ViewGroup parent, String url, float velocity){
+	@Deprecated public boolean shouldDelay(View convertView, ViewGroup parent, String url, float velocity){
 		return Common.shouldDelay(convertView, parent, url, velocity, true);
 	}
 	
+
+	
 	/**
-	 * Determines if a list view item should delay loading a url resource because the list view is scrolling very fast.
+	 * @deprecated  As of release 0.21.3, replaced by shouldDelay(int position, View convertView, ViewGroup parent, String url)
+	 * 
+	 * This method is less efficicent and promote file check which could hold up the UI thread.
+	 * 
+	 * {@link #shouldDelay(int position, View convertView, ViewGroup parent, String url)}
+	 */
+	@Deprecated public boolean shouldDelay(View convertView, ViewGroup parent, String url, float velocity, boolean fileCheck){
+		return Common.shouldDelay(convertView, parent, url, velocity, fileCheck);
+	}
+	
+	
+	/**
+	 * Determines if a group item of an expandable list should delay loading a url resource.
+	 * 
+	 * Designed to be used inside
+	 * getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent)  of an expandable list adapter.
+	 * 
+	 * @param groupPosition the group position of the item
+	 * @param isExpanded the group is expanded
+	 * @param convertView the list item view
+	 * @param parent the parent input of getView
+	 * @param url the content url to be checked if cached and is available immediately
+	 * 
+	 * @return delay should delay loading a particular resource
+	 */
+	
+	public boolean shouldDelay(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent, String url){
+		return Common.shouldDelay(groupPosition, -1, convertView, parent, url);
+	}
+	
+	
+	
+	/**
+	 * Determines if a child item of an expandable list item should delay loading a url resource.
+	 * 
+	 * Designed to be used inside 
+	 * getChildView(int groupPosition, int childPosition, boolean isLastChild, View convertView, ViewGroup parent) of an expandable list adapter.
+	 * 
+	 * @param groupPosition the group position of the item
+	 * @param childPosition the child position of the item
+	 * @param isLastChild the item is last child
+	 * @param convertView the list item view
+	 * @param parent the parent input of getView
+	 * @param url the content url to be checked if cached and is available immediately
+	 * 
+	 * @return delay should delay loading a particular resource
+	 */
+	
+	public boolean shouldDelay(int groupPosition, int childPosition, boolean isLastChild, View convertView, ViewGroup parent, String url){
+	
+		return Common.shouldDelay(groupPosition, childPosition, convertView, parent, url);
+	}
+	
+	/**
+	 * Determines if a list or gallery view item should delay loading a url resource because the view is scrolling very fast.
 	 * The primary purpose of this method is to skip loading remote resources (such as images) over the internet 
-	 * until the list stop flinging and the user is confusing on the displaying items.
+	 * until the list stop flinging and the user is focusing on the displaying items.
 	 *
 	 * If the scrolling stops and there are delayed items displaying, the getView method will be called again to force
 	 * the delayed items to be redrawn. During redraw, this method will always return false, thus allowing a particular 
@@ -1922,11 +2108,6 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 	 *
 	 * Designed to be used inside getView(int position, View convertView, ViewGroup parent) of an adapter.
 	 * 
-	 * If the url resource is cached, in memory or file, this method will returns true. Otherwise, the method returns
-	 * true of the list is scrolling above the specified velocity. Velocity is measured in items/seconds. 
-	 * Velocity of 0 implies always delay during fling.
-	 * 
-	 * If fileCheck is false, only memory is checked. This only applies to image resources.
 	 * 
 	 * <br>
 	 * <br>
@@ -1936,7 +2117,7 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 	 *			
 	 *			...
 	 *			
-	 *			if(aq.shouldDelay(convertView, parent, tbUrl, 0)){
+	 *			if(aq.shouldDelay(position, convertView, parent, tbUrl)){
 	 *				aq.id(R.id.tb).image(placeholder);
 	 *			}else{
 	 *				aq.id(R.id.tb).image(tbUrl, true, true, 0, 0, placeholder, 0, 0);
@@ -1955,19 +2136,23 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 	 * If a scrolled listener is required, use the aquery method scrolled(OnScrollListener listener) to set the listener
 	 * instead of directly calling setOnScrollListener().
 	 * 
-	 * 
+	 * @param position the position of the item
 	 * @param convertView the list item view
 	 * @param parent the parent input of getView
 	 * @param url the content url to be checked if cached and is available immediately
-	 * @param velocity the trigger velocity
-	 * @param fileCheck fileCheck
 	 * 
-	 * @return Bitmap
+	 * @return delay should delay loading a particular resource
 	 */
 	
-	public boolean shouldDelay(View convertView, ViewGroup parent, String url, float velocity, boolean fileCheck){
-		return Common.shouldDelay(convertView, parent, url, velocity, fileCheck);
+	public boolean shouldDelay(int position, View convertView, ViewGroup parent, String url){
+		if(parent instanceof ExpandableListView){
+			throw new IllegalArgumentException("Please use the other shouldDelay methods for expandable list.");
+		}
+		return Common.shouldDelay(position, convertView, parent, url);
 	}
+	
+	
+	
 	
 	/**
 	 * Create a temporary file on EXTERNAL storage (sdcard) that holds the cached content of the url.
@@ -2243,11 +2428,68 @@ public abstract class AbstractAQuery<T extends AbstractAQuery<T>> implements Con
 		View view = inflater.inflate(layoutId, root, false);	
 		view.setTag(AQuery.TAG_LAYOUT, layoutId);
 		
+		//AQUtility.debug("infalted");
+		
 		return view;
 		
 	}
 	
 	
-
+	public T expand(int position, boolean expand){
+		
+		if(view instanceof ExpandableListView){
+			
+			ExpandableListView elv = (ExpandableListView) view;
+			if(expand){
+				elv.expandGroup(position);
+			}else{
+				elv.collapseGroup(position);
+			}
+		}
+		
+		return self();
+	}
+	
+	public T expand(boolean expand){
+		
+		if(view instanceof ExpandableListView){
+			
+			ExpandableListView elv = (ExpandableListView) view;			
+			ExpandableListAdapter ela = elv.getExpandableListAdapter();
+			
+			if(ela != null){
+				
+				int count = ela.getGroupCount();
+				
+				for(int i = 0; i < count; i++){
+					if(expand){
+						elv.expandGroup(i);
+					}else{
+						elv.collapseGroup(i);
+					}
+				}
+				
+			}
+			
+				
+		}
+		
+		return self();
+	}
+	
+	public T download(String url, File target, AjaxCallback<File> cb){
+		
+		cb.url(url).type(File.class).targetFile(target);		
+		return ajax(cb);
+	
+	}
+	
+	public T download(String url, File target, Object handler, String callback){
+		
+		AjaxCallback<File> cb = new AjaxCallback<File>();
+		cb.weakHandler(handler, callback);
+		return download(url, target, cb);
+	
+	}
 	
 }
